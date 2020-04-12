@@ -2,7 +2,7 @@
 MAE-6592 final class project
 
 To install the ROS nodes clone this repo into your catkin workspace:
->cd /home/$USER/catkin_ws/src/
+`cd /home/$USER/catkin_ws/src/`
 >git clone https://github.com/km5es/Robotic-Autonomy-Project.git
 >cd ..
 >catkin_make
