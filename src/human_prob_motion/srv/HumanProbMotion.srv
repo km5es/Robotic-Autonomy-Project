@@ -1,0 +1,27 @@
+float64 Sx0
+float64 Sx1
+float64 Su0
+float64 Su1
+float64 Tx0
+float64 Tx1
+float64 vri
+float64 vli
+float64 thk
+float64 Tm0
+float64 Tm1
+float64 TS0
+float64 TS1
+float64 TS2
+float64 TS3
+---
+float64 Sxr0
+float64 Sxr1
+float64 Txr0
+float64 Txr1
+float64 thk
+float64 Tmr0
+float64 Tmr1
+float64 TSr0
+float64 TSr1
+float64 TSr2
+float64 TSr3

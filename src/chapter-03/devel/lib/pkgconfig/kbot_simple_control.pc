@@ -1,0 +1,8 @@
+prefix=/home/kmakhija/catkin_ws/src/chapter-03/devel
+
+Name: kbot_simple_control
+Description: Description of kbot_simple_control
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,0 +1,2 @@
+kbot_description:kbot_simple_control
+-DCATKIN_DEVEL_PREFIX=/home/kmakhija/catkin_ws/src/chapter-03/devel -DCMAKE_INSTALL_PREFIX=/home/kmakhija/catkin_ws/src/chapter-03/install -G Unix Makefiles

@@ -1,0 +1,9 @@
+float64 vli
+float64 vri
+float64 thk
+float64 posinx
+float64 posiny
+---
+float64 posoutx
+float64 posouty
+float64 posoutth
