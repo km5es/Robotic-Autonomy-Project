@@ -36,8 +36,11 @@ rosrun rviz rviz
 Set Fixed Frame to 'camera_link' and add a PointCloud2 and Image with Topics '/camera/depth/points' and '/camera/color/raw_image' respectively.
 
 ## Launch file with hall and robot and human_prob_model service node
-```
+<!--```
 roslaunch src/chapter-03/src/kbot_description/launch/kbot_base_rviz_gazebo.launch
+```-->
+```
+roslaunch kbot_description kbot_base_rviz_gazebo.launch
 ```
 In Gazebo, go to the Insert tab in the left panel, click the 'kinect' model and click again in the hall to place it. Make sure the simulation is playing so that the plug-in publishes on the camera topics.
 
