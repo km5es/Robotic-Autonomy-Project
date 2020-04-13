@@ -48,3 +48,9 @@ rosrun human_detector human_detector.py
 This will print Hello World and the X and Y pixel coordinates of the centroid of the orange kbot to the terminal. It will also print the state of the prob model.
 
 ![Example screenshot](/images/ros_rviz_example.png)
+
+Note: After modifying the human_detector Python script in the scripts folder, run:
+```
+chmod +x src/human_detector/scripts/human_detector.py
+```
+to generate an executable file.
