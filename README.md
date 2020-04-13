@@ -33,7 +33,7 @@ To view depth camera output in RViz:
 ```
 rosrun rviz rviz
 ```
-Set Fixed Frame to 'camera_link' and add a PointCloud2 and Image with Topics '/camera/depth/points' and '/camera/color/raw_image' respectively.
+Set Fixed Frame to 'camera_link' and add a PointCloud2 and Image with Topics '/camera/depth/points' and '/camera/color/image_raw' respectively.
 
 ## Launch file with hall and robot and human_prob_model service node
 <!--```
