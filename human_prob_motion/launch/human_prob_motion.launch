@@ -1,0 +1,3 @@
+<launch>
+    <node name="human_prob_motion" pkg="human_prob_motion" type="human_motion_server"/>
+</launch>
