@@ -10,7 +10,6 @@ from cv_bridge import CvBridge, CvBridgeError
 # Human prob motion service
 from human_prob_motion.srv import *
 import math
-<<<<<<< HEAD
 from std_msgs.msg._Float32 import Float32
 
 def get_depth(depth_msg):
@@ -26,11 +25,6 @@ def get_depth(depth_msg):
 # Define a callback for the Image message
 def image_callback(img_msg):
     global x, y
-=======
-
-# Define a callback for the Image message
-def image_callback(img_msg):
->>>>>>> origin
     # Initialize the CvBridge class
     bridge = CvBridge()
     # Try to convert the ROS Image message to a CV2 Image
@@ -54,11 +48,7 @@ def image_callback(img_msg):
     mask_noNoise = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     # Find contours
-<<<<<<< HEAD
     _, contours, _= cv2.findContours(mask_noNoise, 1, 2)
-=======
-    contours,hierarchy = cv2.findContours(mask_noNoise, 1, 2)
->>>>>>> origin
 
     # Calc coordiantes of human in image by calculating the centroid of the contour
     M = cv2.moments(contours[0])
@@ -66,15 +56,6 @@ def image_callback(img_msg):
     y = int(M['m01']/M['m00'])
 
     rospy.loginfo("Hello World, X= "+str(x)+"; Y="+str(y))
-<<<<<<< HEAD
-=======
-    
-
-    #!!!!!!!!!
-    #Get depth information here
-    depth = 1.5
-    #!!!!!!!!!
->>>>>>> origin
 
     #!!!!!!!!!
     #Convert coordiantes to bearing here
@@ -145,11 +126,7 @@ def image_callback(img_msg):
         TSs1 = resp.TSr1
         TSs2 = resp.TSr2
         TSs3 = resp.TSr3
-<<<<<<< HEAD
 
-=======
-   
->>>>>>> origin
     except rospy.ServiceException, e:
         print "Service call failed: %s"%e
     #!!!!!!!!!
@@ -157,7 +134,6 @@ def image_callback(img_msg):
     #!!!!!!!!!
     #Publish result
     #!!!!!!!!!
-<<<<<<< HEAD
     pub_x = rospy.Publisher('x_data', Float32, queue_size=10)
     pub_y = rospy.Publisher('y_data', Float32, queue_size=10)
     pub_x.publish(round(Txs0, 3))
@@ -196,44 +172,3 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         pass
 
-=======
-    return x, y
-
-
-def main():
-    # Initialize the ROS Node, allow multiple nodes to be run with this name
-    rospy.init_node('human_detector', anonymous=True)
-
-    # Initalize a subscriber to the "/camera/rgb/image_raw" topic with the function "image_callback" as a callback
-    sub_image = rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-
-    #!!!!!!!!!
-    #Set up publisher
-    #!!!!!!!!!
-
-    # Loop to keep the program from shutting down unless ROS is shut down, or CTRL+C is pressed
-    while not rospy.is_shutdown():
-      #print sub_image
-      rospy.spin()
-
-
-if __name__ == '__main__':
-  # Initialize prob state
-  Sxs0 = 0
-  Sxs1 = 0
-  Txs0 = 0
-  Txs1 = 0
-  thks = 0
-  Tms0 = 0
-  Tms1 = 0
-  TSs0 = 5
-  TSs1 = 0
-  TSs2 = 0
-  TSs3 = 5
-
-  try:
-    main()
-  except rospy.ROSInterruptException:
-    pass
-
->>>>>>> origin
