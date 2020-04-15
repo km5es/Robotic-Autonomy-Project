@@ -6,20 +6,33 @@ from sensor_msgs.msg import Image
 # Import OpenCV libraries and tools
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+import math
 
 # Human prob motion service
 from human_prob_motion.srv import *
 import math
+from std_msgs.msg._Float32 import Float32
+
+def get_depth(depth_msg):
+    # Try to convert depth image to CV readable image.
+    # Initialize the CvBridge class
+    global depth
+    bridge = CvBridge()
+    cv_image = bridge.imgmsg_to_cv2(depth_msg, "32FC1")
+    depth = cv_image[x, y]    # distance to tracked pixels
+#    if math.isnan(depth) == False:
+#        rospy.loginfo("The distance to the object is " +str(depth) + " meters.")
 
 # Define a callback for the Image message
 def image_callback(img_msg):
+    global x, y
     # Initialize the CvBridge class
     bridge = CvBridge()
     # Try to convert the ROS Image message to a CV2 Image
     try:
-      cv_image = bridge.imgmsg_to_cv2(img_msg, "bgr8")
+        cv_image = bridge.imgmsg_to_cv2(img_msg, "bgr8")
     except CvBridgeError, e:
-      rospy.logerr("CvBridge Error: {0}".format(e))
+        rospy.logerr("CvBridge Error: {0}".format(e))
 
     # Convert image to HSV color space
     img_hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
@@ -36,20 +49,14 @@ def image_callback(img_msg):
     mask_noNoise = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     # Find contours
-    contours,hierarchy = cv2.findContours(mask_noNoise, 1, 2)
+    _, contours, _= cv2.findContours(mask_noNoise, 1, 2)
 
     # Calc coordiantes of human in image by calculating the centroid of the contour
     M = cv2.moments(contours[0])
     x = int(M['m10']/M['m00'])
     y = int(M['m01']/M['m00'])
 
-    rospy.loginfo("Hello World, X= "+str(x)+"; Y="+str(y))
-    
-
-    #!!!!!!!!!
-    #Get depth information here
-    depth = 1.5
-    #!!!!!!!!!
+#    rospy.loginfo("Hello World, X= "+str(x)+"; Y="+str(y))
 
     #!!!!!!!!!
     #Convert coordiantes to bearing here
@@ -99,12 +106,19 @@ def image_callback(img_msg):
     TS2 = TSs2 #TSr2
     TS3 = TSs3 #TSr3
 
+    #filename = "track_human.csv"
+    #f = open(filename, "wa")     ## save data to file
+    #f.write("depth\tTxr0\tTxr1\tthk\tTmr0\tTmr1\tTSr0\tTSr1\tTSr2\tTSr3\n")  ## column headers
     rospy.wait_for_service('human_prob_motion')
     try:
-	human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
+        human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
         resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
-        
-        print "%s, %s, %s, %s, %s, %s, %s, %s, %s"%(resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3)        
+        if math.isnan(depth) == False:
+            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
+#            f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
+#            f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
+#            f.write(str(resp.TSr3) + "\t")
+#            f.write("\n")
 
         # Position of robot
         Sxs0 = resp.Sxr0
@@ -120,15 +134,16 @@ def image_callback(img_msg):
         TSs1 = resp.TSr1
         TSs2 = resp.TSr2
         TSs3 = resp.TSr3
-   
     except rospy.ServiceException, e:
-    	print "Service call failed: %s"%e
-    #!!!!!!!!!
+        print "Service call failed: %s"%e
 
     #!!!!!!!!!
     #Publish result
     #!!!!!!!!!
-    return x, y
+    pub_x = rospy.Publisher('x_data', Float32, queue_size=10)
+    pub_y = rospy.Publisher('y_data', Float32, queue_size=10)
+    pub_x.publish(round(Txs0, 3))
+    pub_y.publish(round(Txs1, 3))
 
 
 def main():
@@ -137,33 +152,29 @@ def main():
 
     # Initalize a subscriber to the "/camera/rgb/image_raw" topic with the function "image_callback" as a callback
     sub_image = rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
-
-    #!!!!!!!!!
-    #Set up publisher
-    #!!!!!!!!!
+    sub_depth = rospy.Subscriber("/camera/depth/image_raw", Image, get_depth)
 
     # Loop to keep the program from shutting down unless ROS is shut down, or CTRL+C is pressed
     while not rospy.is_shutdown():
-      #print sub_image
-      rospy.spin()
+        rospy.spin()
 
 
 if __name__ == '__main__':
-  # Initialize prob state
-  Sxs0 = 0
-  Sxs1 = 0
-  Txs0 = 0
-  Txs1 = 0
-  thks = 0
-  Tms0 = 0
-  Tms1 = 0
-  TSs0 = 5
-  TSs1 = 0
-  TSs2 = 0
-  TSs3 = 5
-
-  try:
-    main()
-  except rospy.ROSInterruptException:
-    pass
+    # Initialize prob state
+    Sxs0 = 0
+    Sxs1 = 0
+    Txs0 = 0
+    Txs1 = 0
+    thks = 0
+    Tms0 = 0
+    Tms1 = 0
+    TSs0 = 5
+    TSs1 = 0
+    TSs2 = 0
+    TSs3 = 5
+    
+    try:
+        main()
+    except rospy.ROSInterruptException:
+        pass
 
