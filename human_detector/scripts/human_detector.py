@@ -95,9 +95,9 @@ def image_callback(img_msg):
     Tx0 = Sx0+depth*math.cos(bearing_rad)*math.sin(robot_bearing)+depth*math.sin(bearing_rad)*math.cos(robot_bearing)
     Tx1 = Sx1+depth*math.cos(bearing_rad)*math.cos(robot_bearing)+depth*math.sin(bearing_rad)*math.sin(robot_bearing)
     # Motion and angle of target (differential drive human model)
-    vri = math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
-    vli = math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
-    thk = math.atan((Txs1-Tx1)/(Txs0-Tx0)) #thkr
+    vri = 0 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
+    vli = 0 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
+    thk = 0 #math.atan((Txs1-Tx1)/(Txs0-Tx0)) #thkr
     # Tm and TS (initialize, then use previous values)
     Tm0 = Tms0 #Tmr0
     Tm1 = Tms1 #Tmr1
