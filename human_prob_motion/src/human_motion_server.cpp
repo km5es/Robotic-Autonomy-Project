@@ -206,10 +206,10 @@ bool prob_motion(human_prob_motion::HumanProbMotion::Request  &req, human_prob_m
   f2[2] = prob*TmxkmGkm[1];
   f2[3] = prob*(TmxkmGkm[1]+(dl/2));
   
-  TC[0] = (f2[0]-f1[0])/dl;
-  TC[1] = (f2[1]-f1[1])/dl;
-  TC[2] = (f2[2]-f1[2])/dl;
-  TC[3] = (f2[3]-f1[3])/dl;
+  TA[0] = (f2[0]-f1[0])/dl;
+  TA[1] = (f2[1]-f1[1])/dl;
+  TA[2] = (f2[2]-f1[2])/dl;
+  TA[3] = (f2[3]-f1[3])/dl;
   ////////////////////////////////////////////////////////////////////
   // TKk
   transpose2x2(TC, Ct);
