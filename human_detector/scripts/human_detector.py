@@ -38,8 +38,8 @@ def image_callback(img_msg):
     img_hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 
     # Hue boundaries for orange human
-    lowerBoundary = np.array([10,50,50])
-    upperBoundary = np.array([40,255,255])
+    lowerBoundary = np.array([10, 50, 50])
+    upperBoundary = np.array([40, 255, 255])
 
     # Mask
     mask = cv2.inRange(img_hsv, lowerBoundary, upperBoundary)
