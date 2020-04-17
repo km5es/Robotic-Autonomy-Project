@@ -39,6 +39,6 @@ rosrun human_detector human_detector.py > /home/$USER/track_human_data.csv
 ```
 This will save the output of the human_detector node to a data file which will contain depth information and EKF values.
 
-![Example screenshot](/images/ros_rviz_example.png)
+![Example screenshot](/images/screenshot.png)
 
 
