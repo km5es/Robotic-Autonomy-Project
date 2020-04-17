@@ -93,7 +93,7 @@ float inv2x2(float a[], float b[]){
 
 float sensor(float x, float y, float di, float pi){
   float dc_min = 0.5;	float dc_max = 3.5;
-  float w = 2;
+  float w = 7;
   if (pi<-0.541 || pi>0.541){
     prob = 0;
     return prob;
