@@ -117,8 +117,8 @@ def image_callback(img_msg):
 
     #rospy.loginfo(str(Tx0)+", "+str(Tx1))
 
-    filename = "track_human.csv"
-    f = open(filename, "wa")     ## save data to file
+    #filename = "track_human.csv"
+    #f = open(filename, "wa")     ## save data to file
     #f.write("depth\tTxr0\tTxr1\tthk\tTmr0\tTmr1\tTSr0\tTSr1\tTSr2\tTSr3\n")  ## column headers
     rospy.wait_for_service('human_prob_motion')
     if math.isnan(depth) == False:
@@ -127,10 +127,10 @@ def image_callback(img_msg):
           human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
           resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
           print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
-          f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
-          f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
-          f.write(str(resp.TSr3) + "\t")
-          f.write("\n")
+          #f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
+          #f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
+          #f.write(str(resp.TSr3) + "\t")
+          #f.write("\n")
 
           # Position of robot
           Sxs0 = resp.Sxr0
