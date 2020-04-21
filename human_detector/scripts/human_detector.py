@@ -12,6 +12,8 @@ import math
 from human_prob_motion.srv import *
 import math
 from std_msgs.msg._Float32 import Float32
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
 
 def get_depth(depth_msg):
     # Try to convert depth image to CV readable image.
@@ -22,10 +24,6 @@ def get_depth(depth_msg):
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(depth_msg, "32FC1")
     depth = cv_image[y, x]    # distance to tracked pixels
-    #print(cv_image)
-    #rospy.loginfo("Depth: "+str(depth))
-#    if math.isnan(depth) == False:
-#        rospy.loginfo("The distance to the object is " +str(depth) + " meters.")
 
 # Define a callback for the Image message
 def image_callback(img_msg):
@@ -71,7 +69,6 @@ def image_callback(img_msg):
 
     #rospy.loginfo("bearing = "+str(bearing_rad))
 
-
     #!!!!!!!!!
     #Call EKF service here
     # Initialize and store state of prob model
@@ -115,22 +112,12 @@ def image_callback(img_msg):
     TS2 = TSs2 #TSr2
     TS3 = TSs3 #TSr3
 
-    #rospy.loginfo(str(Tx0)+", "+str(Tx1))
-
-    #filename = "track_human.csv"
-    #f = open(filename, "wa")     ## save data to file
-    #f.write("depth\tTxr0\tTxr1\tthk\tTmr0\tTmr1\tTSr0\tTSr1\tTSr2\tTSr3\n")  ## column headers
     rospy.wait_for_service('human_prob_motion')
     if math.isnan(depth) == False:
     
       try:
           human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
           resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
-          print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
-          #f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
-          #f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
-          #f.write(str(resp.TSr3) + "\t")
-          #f.write("\n")
 
           # Position of robot
           Sxs0 = resp.Sxr0
@@ -151,6 +138,7 @@ def image_callback(img_msg):
 	  # H(X) = ln(sqrt(((2*pi*e)^nx)|TS|))
           entropy = math.log((math.pow((2*math.pi*math.e),2))*((TSs0*TSs3)-(TSs1*TSs2)))
           #print("Entropy: %s" %entropy)
+          track_EKF_f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3, entropy))
 
       except rospy.ServiceException, e:
           print "Service call failed: %s"%e
@@ -159,21 +147,46 @@ def image_callback(img_msg):
     #Publish result
     #!!!!!!!!!
     ## publish to /follower/base_controller/cmd_vel for control
-    ## subscribe to /follower/base_controller/odom for ground truth position
-    pub_x = rospy.Publisher('x_data', Float32, queue_size=10)
-    pub_y = rospy.Publisher('y_data', Float32, queue_size=10)
-    pub_x.publish(round(Txs0, 3))       
-    pub_y.publish(round(Txs1, 3))
 
+def get_human_odom(msg):
+    pos_x = msg.pose.pose.position.x
+    pos_y = msg.pose.pose.position.y
+    or_x = msg.pose.pose.orientation.x 
+    or_y = msg.pose.pose.orientation.y
+    or_z = msg.pose.pose.orientation.z
+    track_human_f.write(str(pos_x)+"\t"+str(pos_y)+"\t"+str(or_x)+"\t"+str(or_y)+"\t"+str(or_z)+"\n")
+#    print msg.pose.pose
+
+def get_robot_odom(msg):
+    pos_x = msg.pose.pose.position.x
+    pos_y = msg.pose.pose.position.y
+    or_x = msg.pose.pose.orientation.x 
+    or_y = msg.pose.pose.orientation.y 
+    or_z = msg.pose.pose.orientation.z
+    track_robot_f.write(str(pos_x)+"\t"+str(pos_y)+"\t"+str(or_x)+"\t"+str(or_y)+"\t"+str(or_z)+"\n")
+#    print msg.pose.pose
 
 def main():
+    global track_EKF_f
+    global track_human_f
+    global track_robot_f
     # Initialize the ROS Node, allow multiple nodes to be run with this name
     rospy.init_node('human_detector', anonymous=True)
-
-    # Initalize a subscriber to the "/camera/rgb/image_raw" topic with the function "image_callback" as a callback
+    ## Subscribers to camera and odom topics
     sub_image = rospy.Subscriber("/camera/color/image_raw", Image, image_callback)
     sub_depth = rospy.Subscriber("/camera/depth/image_raw", Image, get_depth)
+    robot_odom = rospy.Subscriber("/follower/base_controller/odom", Odometry, get_robot_odom)
+    human_odom = rospy.Subscriber("/kbot/base_controller/odom", Odometry, get_human_odom)
 
+    ### Data collection. NOTE: files will be saved in /home/$USER/ directory.
+    track_EKF_f = open("track_EKF.csv", "w")
+    track_human_f = open("track_human.csv", "w")
+    track_robot_f = open("track_robot.csv", "w")
+    ## Column headings for sanity
+    track_EKF_f.write("depth\tTxr0\tTxr1\tthk\tTmr0\tTmr1\tTSr0\tTSr1\tTSr2\tTSr3\tEntropy\n")
+    track_human_f.write("Position_x\tPosition_y\tOrientation_x\tOrientation_y\tOrientation_z\n")
+    track_robot_f.write("Position_x\tPosition_y\tOrientation_x\tOrientation_y\tOrientation_z\n")
+    
     # Loop to keep the program from shutting down unless ROS is shut down, or CTRL+C is pressed
     while not rospy.is_shutdown():
         rospy.spin()
