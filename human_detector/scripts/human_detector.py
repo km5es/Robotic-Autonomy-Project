@@ -51,7 +51,7 @@ def image_callback(img_msg):
     mask_noNoise = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
     # Find contours
-    contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
+    _, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
 
     # Calc coordiantes of human in image by calculating the centroid of the contour
     M = cv2.moments(contours[0])
@@ -143,9 +143,11 @@ def image_callback(img_msg):
     #!!!!!!!!!
     #Publish result
     #!!!!!!!!!
+    ## publish to /follower/base_controller/cmd_vel for control
+    ## subscribe to /follower/base_controller/odom for ground truth position
     pub_x = rospy.Publisher('x_data', Float32, queue_size=10)
     pub_y = rospy.Publisher('y_data', Float32, queue_size=10)
-    pub_x.publish(round(Txs0, 3))
+    pub_x.publish(round(Txs0, 3))       
     pub_y.publish(round(Txs1, 3))
 
 

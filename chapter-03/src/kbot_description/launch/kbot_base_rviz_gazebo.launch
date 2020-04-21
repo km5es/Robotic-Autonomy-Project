@@ -15,7 +15,7 @@
 
   <!--Gazebo empty world launch file-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="world_name" value="$(find kbot_description)/worlds/human+kinect+hallway.sdf"/>
+        <arg name="world_name" value="$(find kbot_description)/worlds/human+robot.sdf"/>
     	<arg name="debug" value="false" />
     	<arg name="gui" value="true" />
     	<arg name="paused" value="false"/>
