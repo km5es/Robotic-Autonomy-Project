@@ -21,7 +21,9 @@ def get_depth(depth_msg):
     global y
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(depth_msg, "32FC1")
-    depth = cv_image[x, y]    # distance to tracked pixels
+    depth = cv_image[y, x]    # distance to tracked pixels
+    #print(cv_image)
+    #rospy.loginfo("Depth: "+str(depth))
 #    if math.isnan(depth) == False:
 #        rospy.loginfo("The distance to the object is " +str(depth) + " meters.")
 
@@ -58,7 +60,7 @@ def image_callback(img_msg):
     x = int(M['m10']/M['m00'])
     y = int(M['m01']/M['m00'])
 
-    #rospy.loginfo("Hello World, X= "+str(x)+"; Y="+str(y))
+    #rospy.loginfo("X= "+str(x)+"; Y="+str(y))
 
     #!!!!!!!!!
     #Convert coordiantes to bearing here
@@ -66,6 +68,9 @@ def image_callback(img_msg):
     bearing_deg = (31.0/320.0)*(x-320.0)
     bearing_rad = (math.pi/180.0)*bearing_deg
     #!!!!!!!!!
+
+    #rospy.loginfo("bearing = "+str(bearing_rad))
+
 
     #!!!!!!!!!
     #Call EKF service here
@@ -94,12 +99,14 @@ def image_callback(img_msg):
     Su0 = 0
     Su1 = 0
     # Position of target
-    Tx0 = Sx0+depth*math.cos(bearing_rad)*math.sin(robot_bearing)+depth*math.sin(bearing_rad)*math.cos(robot_bearing)
-    Tx1 = Sx1+depth*math.cos(bearing_rad)*math.cos(robot_bearing)+depth*math.sin(bearing_rad)*math.sin(robot_bearing)
+    Tx0 = Sx0 + depth*math.sin(robot_bearing+bearing_rad)
+    #Tx0 = Sx0+depth*math.cos(bearing_rad)*math.sin(robot_bearing)+depth*math.sin(bearing_rad)*math.cos(robot_bearing)
+    Tx1 = Sx1 + depth*math.cos(robot_bearing+bearing_rad)
+    #Tx1 = Sx1+depth*math.cos(bearing_rad)*math.cos(robot_bearing)+depth*math.sin(bearing_rad)*math.sin(robot_bearing)
     # Motion and angle of target (differential drive human model)
-    vri = 0.5 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
-    vli = 0.5 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
-    thk = math.atan((Txs1-Tx1)/(Txs0-Tx0)) #thkr
+    vri = 0 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
+    vli = 0 #math.sqrt((pow(Tx0-Txs0, 2))+(pow(Tx1-Txs1, 2)))/0.033
+    thk = math.atan((Txs0-Tx0)/(Txs1-Tx1)) #thkr
     # Tm and TS (initialize, then use previous values)
     Tm0 = Tms0 #Tmr0
     Tm1 = Tms1 #Tmr1
@@ -108,8 +115,10 @@ def image_callback(img_msg):
     TS2 = TSs2 #TSr2
     TS3 = TSs3 #TSr3
 
-    filename = "track_human.csv"
-    f = open(filename, "wa")     ## save data to file
+    #rospy.loginfo(str(Tx0)+", "+str(Tx1))
+
+    #filename = "track_human.csv"
+    #f = open(filename, "wa")     ## save data to file
     #f.write("depth\tTxr0\tTxr1\tthk\tTmr0\tTmr1\tTSr0\tTSr1\tTSr2\tTSr3\n")  ## column headers
     rospy.wait_for_service('human_prob_motion')
     if math.isnan(depth) == False:
@@ -118,10 +127,10 @@ def image_callback(img_msg):
           human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
           resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
           print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
-          f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
-          f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
-          f.write(str(resp.TSr3) + "\t")
-          f.write("\n")
+          #f.write(str(depth) + "\t" + str(resp.Txr0) + "\t" + str(resp.Txr1) + "\t" + str(resp.thk) + "\t" + str(resp.Tmr0) + "\t")
+          #f.write(str(resp.Tmr0) + "\t" + str(resp.Tmr1) + "\t" + str(resp.TSr0) + "\t" + str(resp.TSr1) + "\t" + str(resp.TSr2) + "\t")
+          #f.write(str(resp.TSr3) + "\t")
+          #f.write("\n")
 
           # Position of robot
           Sxs0 = resp.Sxr0
@@ -137,6 +146,12 @@ def image_callback(img_msg):
           TSs1 = resp.TSr1
           TSs2 = resp.TSr2
           TSs3 = resp.TSr3
+
+	  # Differential Entropy
+	  # H(X) = ln(sqrt(((2*pi*e)^nx)|TS|))
+          entropy = math.log((math.pow((2*math.pi*math.e),2))*((TSs0*TSs3)-(TSs1*TSs2)))
+          #print("Entropy: %s" %entropy)
+
       except rospy.ServiceException, e:
           print "Service call failed: %s"%e
 
