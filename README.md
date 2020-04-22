@@ -37,10 +37,10 @@ Optional: Set Fixed Frame to 'camera_link' and add a PointCloud2 and Image with 
 ```
 rosrun human_detector human_detector.py
 ```
-The human truth data will be saved in /home/$USER/track_human.csv__
-The robot truth data will be saved in /home/$USER/track_robot.csv__
-EKF data will be dumped in /home/$USER/track_EKF.csv__
-The data folder contains some example data and a video.__
+The human truth data will be saved in /home/$USER/track_human.csv <br />
+The robot truth data will be saved in /home/$USER/track_robot.csv <br />
+EKF data will be dumped in /home/$USER/track_EKF.csv <br />
+The data folder contains some example data and a video. <br />
 
 ![Example screenshot](/images/screenshot.png)
 
