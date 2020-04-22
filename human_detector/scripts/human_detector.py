@@ -79,8 +79,8 @@ def image_callback(img_msg):
 
     try:
       # Find contours
-      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
-      #_, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
+#      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
+      _, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
 
       # Calc coordiantes of human in image by calculating the centroid of the contour
       M = cv2.moments(contours[0])
@@ -152,7 +152,8 @@ def image_callback(img_msg):
         try:
             human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
             resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
-            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
+#            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
+            print("Human bearing: " +str(np.rad2deg(bearing_rad)))
 
             # Position of robot
             Sxs0 = resp.Sxr0
@@ -182,16 +183,29 @@ def image_callback(img_msg):
             # Remember that linear.x is velocity in +y direction
             # linear.y is velocity in -x direction
     
-            if depth > 1:
-              x_vel = 0.6*math.sin(bearing_rad)
-              y_vel = 0.6*math.cos(bearing_rad)
-            else:
+            if depth > 0.5:
+              gain_ang_vel = 1
+              gain_lin_vel = 0.45
+              if np.deg2rad(-10) <= bearing_rad <= np.deg2rad(10):
+                ang_vel = 0
+                x_vel = gain_lin_vel*math.sin(bearing_rad)
+                y_vel = gain_lin_vel*math.cos(bearing_rad)
+              elif bearing_rad <= -1*np.deg2rad(10):
+                ang_vel = abs(gain_ang_vel*bearing_rad)
+                x_vel = 0
+                y_vel = 0
+              elif bearing_rad >= np.deg2rad(10):
+                ang_vel = -abs(gain_ang_vel*bearing_rad)
+                x_vel = 0
+                y_vel = 0
+
+            elif depth <= 0.5:
               x_vel = 0
               y_vel = 0
-
+              ang_vel = 0
             #control_msg.linear.x = y_vel
             #control_msg.linear.y = (-1)*x_vel
-
+            print("Robot ang_vel: " +str(np.rad2deg(ang_vel)))
             #controller_pub.publish(control_msg)
 
 
@@ -201,7 +215,7 @@ def image_callback(img_msg):
       else:
         x_vel = 0
         y_vel = 0
-    
+        ang_vel = 0
 
       #!!!!!!!!
       #Publish result
@@ -212,6 +226,7 @@ def image_callback(img_msg):
     except IndexError as e:
       x_vel = 0
       y_vel = 0
+      ang_vel = 0
       print("Target out of FOV!")
 
     #!!!!!!!!!
@@ -224,6 +239,7 @@ def image_callback(img_msg):
 
     control_msg.linear.x = y_vel
     control_msg.linear.y = (-1)*x_vel
+    control_msg.angular.z = ang_vel
 
     controller_pub.publish(control_msg)
 
