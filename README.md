@@ -42,12 +42,12 @@ The robot truth data will be saved in /home/$USER/track_robot.csv <br />
 EKF data will be dumped in /home/$USER/track_EKF.csv <br />
 The data folder contains some example data and a video. <br />
 
-## NOTE
+### NOTE
 If the robot gets stuck in a wall there is an explicit teleop launch to get it out:
 ```
 roslaunch kbot_simple_control follower_control_teleop.launch
 ```
-# Example simulation of robot tracking human
+### Example simulation of robot tracking human
 ![Example screenshot](/data/ezgif.com-crop(2).gif)
 
 
