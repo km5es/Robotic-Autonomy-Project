@@ -35,9 +35,12 @@ Optional: Set Fixed Frame to 'camera_link' and add a PointCloud2 and Image with 
 
 ## Run human_detector node
 ```
-rosrun human_detector human_detector.py > /home/$USER/track_human_data.csv
+rosrun human_detector human_detector.py
 ```
-This will save the output of the human_detector node to a data file which will contain depth information and EKF values.
+The human truth data will be saved in /home/$USER/track_human.csv <br />
+The robot truth data will be saved in /home/$USER/track_robot.csv <br />
+EKF data will be dumped in /home/$USER/track_EKF.csv <br />
+The data folder contains some example data and a video. <br />
 
 ![Example screenshot](/images/screenshot.png)
 
