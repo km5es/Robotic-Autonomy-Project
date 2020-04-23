@@ -15,6 +15,7 @@ from std_msgs.msg._Float32 import Float32
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import tf
+from random import random
 
 def get_depth(depth_msg):
     # Try to convert depth image to CV readable image.
@@ -79,8 +80,8 @@ def image_callback(img_msg):
 
     try:
       # Find contours
-#      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
-      _, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
+      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)[-2:]
+#      _, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
 
       # Calc coordiantes of human in image by calculating the centroid of the contour
       M = cv2.moments(contours[0])
@@ -154,6 +155,7 @@ def image_callback(img_msg):
             resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
 #            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
             print("Human bearing: " +str(np.rad2deg(bearing_rad)))
+            print("Distance to human: " +str(depth))
 
             # Position of robot
             Sxs0 = resp.Sxr0
@@ -183,23 +185,24 @@ def image_callback(img_msg):
             # Remember that linear.x is velocity in +y direction
             # linear.y is velocity in -x direction
     
-            if depth > 0.5:
+            if depth > 1:
               gain_ang_vel = 1
-              gain_lin_vel = 0.45
+              gain_lin_vel = 1
               if np.deg2rad(-10) <= bearing_rad <= np.deg2rad(10):
                 ang_vel = 0
-                x_vel = gain_lin_vel*math.sin(bearing_rad)
-                y_vel = gain_lin_vel*math.cos(bearing_rad)
+                x_vel = (gain_lin_vel*math.sin(bearing_rad)) * random()
+                y_vel = (gain_lin_vel*math.cos(bearing_rad)) * random()
               elif bearing_rad <= -1*np.deg2rad(10):
                 ang_vel = abs(gain_ang_vel*bearing_rad)
-                x_vel = 0
-                y_vel = 0
+                x_vel = gain_lin_vel * math.sin(bearing_rad) * random()
+                y_vel = gain_lin_vel * math.cos(bearing_rad) * random()
               elif bearing_rad >= np.deg2rad(10):
                 ang_vel = -abs(gain_ang_vel*bearing_rad)
-                x_vel = 0
-                y_vel = 0
+                x_vel = gain_lin_vel * math.sin(bearing_rad) * random()
+                y_vel = gain_lin_vel * math.cos(bearing_rad) * random()
+              print("x-vel: " +str(x_vel) + "y-vel: " +str(y_vel))
 
-            elif depth <= 0.5:
+            elif depth <= 1:
               x_vel = 0
               y_vel = 0
               ang_vel = 0

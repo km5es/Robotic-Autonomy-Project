@@ -10,7 +10,7 @@
   <node name="human_motion_server" pkg="human_prob_motion" type="human_motion_server"/>
 
   <!--RViz-->
-  <node name="rviz" pkg="rviz" type="rviz" required="true"/>
+  <!--node name="rviz" pkg="rviz" type="rviz" required="true"/-->
 
 
   <!--Gazebo empty world launch file-->
