@@ -7,9 +7,10 @@
 #include <std_msgs/MultiArrayLayout.h>
 #include <std_msgs/MultiArrayDimension.h>
 
+#include <random_numbers.h>
 
 // Define variables and matrices
-int nk = 10;	int dt = 1;	float dl = 0.1;
+int nk = 1;	int dt = 1;	float dl = 0.1;
 
 float TSwkm [4] = {1, 0, 0, 1};
 
@@ -107,8 +108,8 @@ bool prob_motion(human_prob_motion::HumanProbMotion::Request  &req, human_prob_m
   dmxkmGkm[0] = (0.5)*(Tu[0]+Tu[1])*cos(req.thk);
   dmxkmGkm[1] = (0.5)*(Tu[0]+Tu[1])*sin(req.thk);
 
-  TmxkGkm[0] = TmxkmGkm[0] + dt*dmxkmGkm[0];
-  TmxkGkm[1] = TmxkmGkm[1] + dt*dmxkmGkm[1];
+  TmxkGkm[0] = TmxkmGkm[0] + dt*dmxkmGkm[0] + gaussian(0, 0.1);
+  TmxkGkm[1] = TmxkmGkm[1] + dt*dmxkmGkm[1] + gaussian(0, 0.1);
 
   //TA = derive_grad(TmxkmGkm, dl, 'human', Tu);
   dx1[0] = dl/2;
@@ -149,9 +150,10 @@ bool prob_motion(human_prob_motion::HumanProbMotion::Request  &req, human_prob_m
 
   // Update robot and target positions;
   Sx[0] = Sx[0] + Su[0];	Sx[0] = Sx[0] + Su[1];
-  Tdx[0] = (0.5)*(Tu[0]+Tu[1])*cos(req.thk); //req.Tu0;
-  Tdx[1] = (0.5)*(Tu[0]+Tu[1])*sin(req.thk); //req.Tu1;
-  Tx[0] = Tx[0] + dt*Tdx[0];	Tx[1] = Tx[1] + dt*Tdx[1];
+  Tdx[0] = (0.5)*(Tu[0]+Tu[1])*cos(req.thk) + gaussian(0, 0.001); //req.Tu0;
+  Tdx[1] = (0.5)*(Tu[0]+Tu[1])*sin(req.thk) + gaussian(0, 0.001); //req.Tu1;
+  Tx[0] = Tx[0] + dt*Tdx[0] + gaussian(0, 0.1);
+  Tx[1] = Tx[1] + dt*Tdx[1] + gaussian(0, 0.1);
   res.Sxr0 = Sx[0];		res.Sxr1 = Sx[1];
   res.Txr0 = Tx[0];		res.Txr1 = Tx[1];
   res.thk = req.thk+dt*(1/0.35)*(Tu[1]-Tu[0]);
