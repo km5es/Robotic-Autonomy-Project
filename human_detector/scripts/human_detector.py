@@ -28,8 +28,8 @@ def get_depth(depth_msg):
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(depth_msg, "32FC1")
     depth = cv_image[y, x]    # distance to tracked pixels
-    # Add uncertainty, mean of 0, var of 0.1 m
-    depth = depth + random.gauss(0, 0.1)
+    # Add uncertainty, mean of 0, var of 0.05 m
+    depth = depth + random.gauss(0, 0.05)
     #print(cv_image)
     #rospy.loginfo("Depth: "+str(depth))
 #    if math.isnan(depth) == False:
@@ -84,7 +84,7 @@ def image_callback(img_msg):
     try:
       # Find contours
       contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
-      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)[-2:]
+      #contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)[-2:]
       #_, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
 
       # Calc coordiantes of human in image by calculating the centroid of the contour
@@ -100,6 +100,7 @@ def image_callback(img_msg):
       bearing_deg = (31.0/320.0)*(x-320.0)
       # Add uncertainty to bearing, mean = 0, var = 0.09 rad (~5 degrees)
       bearing_rad = (math.pi/180.0)*bearing_deg + random.gauss(0, 0.09)
+      #print(str(bearing_rad))
       #!!!!!!!!!
 
       #rospy.loginfo("bearing = "+str(bearing_rad))
@@ -132,13 +133,13 @@ def image_callback(img_msg):
 
 
       # Trying stuff with time
-      #global now
-      #global past
+      global now
+      global past
 
-      #past = now
-      #now = rospy.get_rostime()
-      #dt = now-past
-      #rospy.loginfo("Time"+ str(dt))
+      past = now
+      now = rospy.get_rostime().nsecs
+      dt = (now-past)*(0.000000001)
+      #rospy.loginfo("Time: "+ str(dt) + "s")
 
       # Position of robot
       Sx0 = followerX
@@ -146,7 +147,6 @@ def image_callback(img_msg):
       # Robot bearing (rad)
       robot_bearing = followerYaw
 
-      
       # Motion of robot
       Su0 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
       Su1 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
@@ -158,7 +158,16 @@ def image_callback(img_msg):
       # Motion and angle of target (differential drive human model)
       vri = 0 #math.sqrt(math.pow(Tx0-Txs0, 2) + math.pow(Tx1-Txs1, 2))
       vli = 0 #math.sqrt(math.pow(Tx0-Txs0, 2) + math.pow(Tx1-Txs1, 2))
-      # print("Human moving: "+str(vri)+", "+str(vli))
+      #print("Human moving: "+str(vri)+", "+str(vli))
+      #print("Human moving: "+str(math.sqrt(math.pow(float(Txs0)-float(Tx0), 2) +math.pow(float(Txs1)-float(Tx1),2)))
+      #print("Human observed at: "+str(Tx0)+", "+str(Tx1))
+      #print("Human m at: "+str(Tms0)+", "+str(Tms1))
+      #dh = math.sqrt(math.pow(Tms0-Tx0, 2) + math.pow(Tms1-Tx1,2))
+      #print("Human moving: "+str(dh/dt)+" m/s")
+      
+      #vri = 0#dh/dt
+      #vli = 0#dt
+
       thk = math.atan((Txs0-Tx0)/(Txs1-Tx1)) #thkr
       # Tm and TS (initialize, then use previous values)
       Tm0 = Tms0 #Tmr0
@@ -177,6 +186,7 @@ def image_callback(img_msg):
             human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
             resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
             #print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
+            #print("Human real position: "+str(humanX)+", "+str(humanY))
             print("%.6f\t%.6f\t%.6f\t%.6f\t%.6f"%(depth, resp.Txr0, resp.Txr1, resp.Tmr0, resp.Tmr1))
             #print("Human bearing: "+str(np.rad2deg(bearing_rad)))
             #print("Distance to human: "+str(depth))
@@ -219,30 +229,28 @@ def image_callback(img_msg):
             # Remember that linear.x is velocity in +y direction
             # linear.y is velocity in -x direction
     
+
+
+            gain_ang_vel = 5
+            gain_lin_vel = 1
+            if bearing_rad <= (-1)*0.09:
+              ang_vel = abs(gain_ang_vel*bearing_rad)
+            elif bearing_rad >= 0.09:
+              ang_vel = -abs(gain_ang_vel*bearing_rad)
+            else:
+              ang_vel = 0
+
             if depth > 1:
               #x_vel = 0.6*math.sin(bearing_rad)
               #y_vel = 0.6*math.cos(bearing_rad)
-              gain_ang_vel = 1
-              gain_lin_vel = 1
-              if np.deg2rad(-10) <= bearing_rad <= np.deg2rad(10):
-                ang_vel = 0
-                x_vel = gain_lin_vel*math.sin(bearing_rad)
-                y_vel = gain_lin_vel*math.cos(bearing_rad)
-              elif bearing_rad <= -1*(np.deg2rad(10)):
-                ang_vel = abs(gain_ang_vel*bearing_rad)
-                x_vel = gain_lin_vel*math.sin(bearing_rad)
-                y_vel = gain_lin_vel*math.cos(bearing_rad)
-              elif bearing_rad >= np.deg2rad(10):
-                ang_vel = -abs(gain_ang_vel*bearing_rad)
-                x_vel = gain_lin_vel*math.sin(bearing_rad)
-                y_vel = gain_lin_vel*math.cos(bearing_rad)
-              #print("x_vel: "+str(x_vel) + "y_vel: "+str(y_vel))
+              x_vel = gain_lin_vel*math.sin(bearing_rad)
+              y_vel = gain_lin_vel*math.cos(bearing_rad)
 
 
             else:
               x_vel = 0
               y_vel = 0
-              ang_vel = 0
+            
 
             #control_msg.linear.x = y_vel
             #control_msg.linear.y = (-1)*x_vel
@@ -331,8 +339,10 @@ def main():
 
 
     # Loop to keep the program from shutting down unless ROS is shut down, or CTRL+C is pressed
+    r = rospy.Rate(1) # 1 Hz
     while not rospy.is_shutdown():
         rospy.spin()
+        r.sleep()
 
 
 if __name__ == '__main__':
@@ -363,8 +373,8 @@ if __name__ == '__main__':
     humanY = 0
     humanYaw = 0
 
-    #now = 0
-    #past = 0
+    now = 0
+    past = 0
     
     try:
         main()
