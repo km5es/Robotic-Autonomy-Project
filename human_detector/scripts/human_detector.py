@@ -50,7 +50,6 @@ def odom_callback(msg):
     followerY = msg.pose.pose.position.x
     followerYaw = (-1)*yaw
 
-    track_robot_f.write(str(followerX)+"\t"+str(followerY)+"\t"+str(followerYaw)+"\n")
     #print(followerX)
     #print(followerY)
     #print(followerYaw)
@@ -127,6 +126,10 @@ def image_callback(img_msg):
       global followerY
       global followerYaw
 
+      global humanX
+      global humanY
+      global humanYaw
+
 
       # Trying stuff with time
       #global now
@@ -142,6 +145,8 @@ def image_callback(img_msg):
       Sx1 = followerY
       # Robot bearing (rad)
       robot_bearing = followerYaw
+
+      
       # Motion of robot
       Su0 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
       Su1 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
@@ -203,7 +208,12 @@ def image_callback(img_msg):
             # (Tmr0, Tmr1) = corrected position of human
             # [TSr0, TSr1; TSr2, TSr3] = covariance matrix for human position
 
+            # Log position of robot
+            track_robot_f.write(str(followerX)+"\t"+str(followerY)+"\t"+str(followerYaw)+"\n")
 
+            # Log position of human
+            track_human_f.write(str(humanX)+"\t"+str(humanY)+"\t"+str(humanYaw)+"\n")
+      
 
             # Construct follower Twist message
             # Remember that linear.x is velocity in +y direction
@@ -281,12 +291,15 @@ def get_human_odom(msg):
 
     (roll, pitch, yaw) = tf.transformations.euler_from_quaternion([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
 
-    pos_x = (-1)*msg.pose.pose.position.y
-    pos_y = msg.pose.pose.position.x
+    global humanX
+    global humanY
+    global humanYaw
+    
+    humanX = (-1)*msg.pose.pose.position.y
+    humanY = msg.pose.pose.position.x
     humanYaw = (-1)*yaw
-    track_human_f.write(str(pos_x)+"\t"+str(pos_y)+"\t"+str(humanYaw)+"\n")
 #    print msg.pose.pose
-    print(str(pos_x)+", "+str(pos_y))
+    # print(str(pos_x)+", "+str(pos_y))
 
 
 def main():
@@ -345,9 +358,13 @@ if __name__ == '__main__':
     followerX = 0
     followerY = 0
     followerYaw = 0
+    
+    humanX = 0
+    humanY = 0
+    humanYaw = 0
 
-    now = 0
-    past = 0
+    #now = 0
+    #past = 0
     
     try:
         main()
