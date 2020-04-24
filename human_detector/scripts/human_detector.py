@@ -15,7 +15,9 @@ from std_msgs.msg._Float32 import Float32
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import tf
-from random import random
+
+import random
+#from random import random
 
 def get_depth(depth_msg):
     # Try to convert depth image to CV readable image.
@@ -26,6 +28,8 @@ def get_depth(depth_msg):
     bridge = CvBridge()
     cv_image = bridge.imgmsg_to_cv2(depth_msg, "32FC1")
     depth = cv_image[y, x]    # distance to tracked pixels
+    # Add uncertainty, mean of 0, var of 0.1 m
+    depth = depth + random.gauss(0, 0.1)
     #print(cv_image)
     #rospy.loginfo("Depth: "+str(depth))
 #    if math.isnan(depth) == False:
@@ -80,8 +84,9 @@ def image_callback(img_msg):
 
     try:
       # Find contours
+      contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)
       contours, hierarchy = cv2.findContours(mask_noNoise, 1, 2)[-2:]
-#      _, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
+      #_, contours, _ = cv2.findContours(mask_noNoise, 1, 2)
 
       # Calc coordiantes of human in image by calculating the centroid of the contour
       M = cv2.moments(contours[0])
@@ -94,7 +99,8 @@ def image_callback(img_msg):
       #Convert coordiantes to bearing here
       # Kinect has a field of view of 62x48.6 and resolution of 640x480
       bearing_deg = (31.0/320.0)*(x-320.0)
-      bearing_rad = (math.pi/180.0)*bearing_deg
+      # Add uncertainty to bearing, mean = 0, var = 0.09 rad (~5 degrees)
+      bearing_rad = (math.pi/180.0)*bearing_deg + random.gauss(0, 0.09)
       #!!!!!!!!!
 
       #rospy.loginfo("bearing = "+str(bearing_rad))
@@ -121,21 +127,33 @@ def image_callback(img_msg):
       global followerY
       global followerYaw
 
+
+      # Trying stuff with time
+      #global now
+      #global past
+
+      #past = now
+      #now = rospy.get_rostime()
+      #dt = now-past
+      #rospy.loginfo("Time"+ str(dt))
+
       # Position of robot
       Sx0 = followerX
       Sx1 = followerY
       # Robot bearing (rad)
       robot_bearing = followerYaw
       # Motion of robot
-      Su0 = 0
-      Su1 = 0
+      Su0 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
+      Su1 = 0 #math.sqrt(pow(Sx0-Sxs0, 2)+pow(Sx1-Sxs1, 2))/float(str(dt))
+      #print("Robot moving: "+str(Su0)+", "+str(Su1))
       # Position of target
       Tx0 = Sx0 + depth*math.sin(robot_bearing+bearing_rad)
       Tx1 = Sx1 + depth*math.cos(robot_bearing+bearing_rad)
  
       # Motion and angle of target (differential drive human model)
-      vri = 0
-      vli = 0
+      vri = 0 #math.sqrt(math.pow(Tx0-Txs0, 2) + math.pow(Tx1-Txs1, 2))
+      vli = 0 #math.sqrt(math.pow(Tx0-Txs0, 2) + math.pow(Tx1-Txs1, 2))
+      # print("Human moving: "+str(vri)+", "+str(vli))
       thk = math.atan((Txs0-Tx0)/(Txs1-Tx1)) #thkr
       # Tm and TS (initialize, then use previous values)
       Tm0 = Tms0 #Tmr0
@@ -153,9 +171,10 @@ def image_callback(img_msg):
         try:
             human_motion = rospy.ServiceProxy('human_prob_motion', HumanProbMotion)
             resp = human_motion(Sx0, Sx1, Su0, Su1, Tx0, Tx1, vri, vli, thk, Tm0, Tm1, TS0, TS1, TS2, TS3)
-#            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
-            print("Human bearing: " +str(np.rad2deg(bearing_rad)))
-            print("Distance to human: " +str(depth))
+            #print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3))
+            print("%.6f\t%.6f\t%.6f\t%.6f\t%.6f"%(depth, resp.Txr0, resp.Txr1, resp.Tmr0, resp.Tmr1))
+            #print("Human bearing: "+str(np.rad2deg(bearing_rad)))
+            #print("Distance to human: "+str(depth))
 
             # Position of robot
             Sxs0 = resp.Sxr0
@@ -178,6 +197,11 @@ def image_callback(img_msg):
             #print("Entropy: %s" %entropy)
 
             track_EKF_f.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n"%(depth, resp.Txr0, resp.Txr1, resp.thk, resp.Tmr0, resp.Tmr1, resp.TSr0, resp.TSr1, resp.TSr2, resp.TSr3, entropy))
+            # depth = distance to human
+            # (Txr0, Txr1) = predicted position of human
+            # thk = direction human is facing
+            # (Tmr0, Tmr1) = corrected position of human
+            # [TSr0, TSr1; TSr2, TSr3] = covariance matrix for human position
 
 
 
@@ -186,29 +210,33 @@ def image_callback(img_msg):
             # linear.y is velocity in -x direction
     
             if depth > 1:
+              #x_vel = 0.6*math.sin(bearing_rad)
+              #y_vel = 0.6*math.cos(bearing_rad)
               gain_ang_vel = 1
               gain_lin_vel = 1
               if np.deg2rad(-10) <= bearing_rad <= np.deg2rad(10):
                 ang_vel = 0
-                x_vel = (gain_lin_vel*math.sin(bearing_rad)) * random()
-                y_vel = (gain_lin_vel*math.cos(bearing_rad)) * random()
-              elif bearing_rad <= -1*np.deg2rad(10):
+                x_vel = gain_lin_vel*math.sin(bearing_rad)
+                y_vel = gain_lin_vel*math.cos(bearing_rad)
+              elif bearing_rad <= -1*(np.deg2rad(10)):
                 ang_vel = abs(gain_ang_vel*bearing_rad)
-                x_vel = gain_lin_vel * math.sin(bearing_rad) * random()
-                y_vel = gain_lin_vel * math.cos(bearing_rad) * random()
+                x_vel = gain_lin_vel*math.sin(bearing_rad)
+                y_vel = gain_lin_vel*math.cos(bearing_rad)
               elif bearing_rad >= np.deg2rad(10):
                 ang_vel = -abs(gain_ang_vel*bearing_rad)
-                x_vel = gain_lin_vel * math.sin(bearing_rad) * random()
-                y_vel = gain_lin_vel * math.cos(bearing_rad) * random()
-              print("x-vel: " +str(x_vel) + "y-vel: " +str(y_vel))
+                x_vel = gain_lin_vel*math.sin(bearing_rad)
+                y_vel = gain_lin_vel*math.cos(bearing_rad)
+              #print("x_vel: "+str(x_vel) + "y_vel: "+str(y_vel))
 
-            elif depth <= 1:
+
+            else:
               x_vel = 0
               y_vel = 0
               ang_vel = 0
+
             #control_msg.linear.x = y_vel
             #control_msg.linear.y = (-1)*x_vel
-            print("Robot ang_vel: " +str(np.rad2deg(ang_vel)))
+            #print("Robot ang_vel: "+str(np.rad2deg(ang_vel)))
             #controller_pub.publish(control_msg)
 
 
@@ -219,6 +247,7 @@ def image_callback(img_msg):
         x_vel = 0
         y_vel = 0
         ang_vel = 0
+    
 
       #!!!!!!!!
       #Publish result
@@ -257,6 +286,7 @@ def get_human_odom(msg):
     humanYaw = (-1)*yaw
     track_human_f.write(str(pos_x)+"\t"+str(pos_y)+"\t"+str(humanYaw)+"\n")
 #    print msg.pose.pose
+    print(str(pos_x)+", "+str(pos_y))
 
 
 def main():
@@ -315,6 +345,9 @@ if __name__ == '__main__':
     followerX = 0
     followerY = 0
     followerYaw = 0
+
+    now = 0
+    past = 0
     
     try:
         main()
