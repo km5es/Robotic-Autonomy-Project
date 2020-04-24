@@ -89,6 +89,7 @@ bool prob_motion(human_prob_motion::HumanProbMotion::Request  &req, human_prob_m
   Su[0] = req.Su0;		Su[1] = req.Su1;
   Tx[0] = req.Tx0;		Tx[1] = req.Tx1;
   Tu[0] = req.vli;		Tu[1] = req.vri;
+  //dt = req.vli;
   // mean and covar matrices
   TmxkmGkm[0] = req.Tm0;	TmxkmGkm[1] = req.Tm1;
   TSxkmGkm[0] = req.TS0;	TSxkmGkm[1] = req.TS1;
